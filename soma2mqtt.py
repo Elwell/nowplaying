@@ -7,6 +7,8 @@ import tweepy
 import datetime
 import time
 
+import somaconfig # contains username/pass
+
 # Get these values from your application settings
 
 CONSUMER_KEY = ''
