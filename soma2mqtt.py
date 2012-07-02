@@ -7,19 +7,18 @@ import tweepy
 import datetime
 import time
 
-import somaconfig # contains username/pass
+import ConfigParser
+config = ConfigParser.ConfigParser()
+config.read('nowplaying.cfg')
+
 
 # Get these values from your application settings
+CONSUMER_KEY = config.get('twitter','consumer_key')
+CONSUMER_SECRET = config.get('twitter','consumer_secret')
+ACCESS_TOKEN = config.get('twitter','access_token')
+ACCESS_TOKEN_SECRET = config.get('twitter','access_token_secret')
 
-CONSUMER_KEY = ''
-CONSUMER_SECRET = ''
-
-# Get these values from the "My Access Token" link located in the
-# margin of your application details, or perform the full OAuth
-# dance
-
-ACCESS_TOKEN = ''
-ACCESS_TOKEN_SECRET = ''
+# The above are defined in config file
 
 auth = tweepy.OAuthHandler(CONSUMER_KEY, CONSUMER_SECRET)
 auth.set_access_token(ACCESS_TOKEN, ACCESS_TOKEN_SECRET)
@@ -36,29 +35,47 @@ auth.set_access_token(ACCESS_TOKEN, ACCESS_TOKEN_SECRET)
 # auth.get_access_token(verifier)
 
 
-# list of soma.fm stations to follow
-stations=("groovesalad", "doomed", "somaelectropop", "indiepoprocks", "spacestationsma", "digitalis", "noisepopradio", "somalush", "secretagentsoma", "dronezone", "sonicuniverse", "xmissioncontrol", "suburbsofgoa", "beatblender", "justcovers")
+# list of soma.fm stations to follow (twittername, stationID)
+stations={
+'groovesalad': 'groovesalad',
+'secretagentsoma': 'secretagent',
+'dronezone': 'dronezone',
+'indiepoprocks': 'indiepop',
+'cliqhop': ' cliqhop',
+'beatblender': 'beatblender',
+'tags_trip':'tags',
+'illstreet': 'illstreet',
+'spacestationsma': 'spacestation',
+'bootliquor': 'bootliquor',
+'somalush': 'lush',
+'digitalis': 'digitalis',
+'suburbsofgoa': 'suburbsofgoa',
+'underground80s': 'u80s',
+'sonicuniverse': 'sonicuniverse',
+'poptron': 'poptron',
+'justcovers': 'covers',
+'blackrockfm': 'brfm',
+'xmissioncontrol': 'missioncontrol'}
+
 stationids = []
 
 #sadly we need to convert that list to user_id
-userinfo = tweepy.api.lookup_users(screen_names=stations)
+userinfo = tweepy.api.lookup_users(screen_names=stations.keys())
 for ids in userinfo:
     stationids.append(ids.id)
 
 # open a mqtt publisher
 import mosquitto
 mqttc = mosquitto.Mosquitto('pubclient_somastreamer')
-mqttc.username_pw_set("XXXX","XXXX")
+mqtt_user = config.get('somafm','mqtt_user')
+mqtt_pass = config.get('somafm','mqtt_pass')
+mqttc.username_pw_set(mqtt_user,mqtt_pass)
+# username and pass are in config file
 mqttc.connect("nowplaying.elwell.org.uk", 1883, 60, True)
 
 class CustomStreamListener(tweepy.StreamListener):
 
     def on_status(self, status):
-        
-        # We'll simply print some values in a tab-delimited format
-        # suitable for capturing to a flat file but you could opt 
-        # store them elsewhere, retweet select statuses, etc.
-
         try:
             # unicode u266C = ♬
             NP = status.text.split(u'\u266C')[1]
@@ -66,11 +83,11 @@ class CustomStreamListener(tweepy.StreamListener):
             artist = arttrack[0].strip()
             track = arttrack[1].strip()
             ts = int(time.mktime(status.created_at.timetuple())) # twitter already uses UTC
-            print "%s\t%s (%s) |%s|%s|%s" % (status.author.screen_name, NP, status.created_at, artist,track,ts)
+            print "%s\t%s (%s) |%s|%s|%s" % (stations[status.author.screen_name], NP, status.created_at, artist,track,ts)
             # do the MQTT thing
-            mqttc.publish("somafm/%s/nowplaying/artist" % status.author.screen_name, str(artist))
-            mqttc.publish("somafm/%s/nowplaying/track" % status.author.screen_name, str(track))
-            mqttc.publish("somafm/%s/nowplaying/started" % status.author.screen_name, status.created_at.isoformat())
+            mqttc.publish("somafm/%s/nowplaying/artist" % stations[status.author.screen_name], str(artist))
+            mqttc.publish("somafm/%s/nowplaying/track" % stations[status.author.screen_name], str(track))
+            mqttc.publish("somafm/%s/nowplaying/started" % stations[status.author.screen_name], status.created_at.isoformat())
       
 
         except Exception, e:

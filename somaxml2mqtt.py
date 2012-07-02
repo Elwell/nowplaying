@@ -11,16 +11,25 @@ import time
 import signal
 from lxml import etree
 
+import ConfigParser
+config = ConfigParser.ConfigParser()
+config.read('nowplaying.cfg')
+
+
+
 # Connect to broker
 mqttc = mosquitto.Mosquitto('pubclient_somaxml')
-mqttc.username_pw_set("XXXX","XXXX")
+mqtt_user = config.get('somafm','mqtt_user')
+mqtt_pass = config.get('somafm','mqtt_pass')
+mqttc.username_pw_set(mqtt_user,mqtt_pass)
+
 mqttc.connect(mqtt_broker, 1883, 60, True)
 
 metadata = collections.defaultdict(dict)
 persistent = collections.defaultdict(dict)
 twitfeeds = {}
 
-DEBUG = True
+DEBUG = False
 
 # Handle ctrl-c gracefully and unpublish
 def handler(signum, frame):
@@ -39,11 +48,10 @@ signal.signal(signal.SIGINT, handler)
 
 while True:
   tree = etree.parse(xmlurl)
-  #interesting = ('title','description','image','twitter','listeners','dj')
   for chan in tree.getiterator('channel'):
-    #for thing in interesting:
-        #for key in chan.iterchildren(tag=thing):
         for key in chan.iterchildren():
+          if key.tag not in ('fastpls','slowpls'):
+            # we skip the playlists for now - need to include format
             try:
               if metadata[chan.attrib['id']][key.tag] != key.text:
                 # does not match last value - check if we think its persistent
