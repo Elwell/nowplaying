@@ -41,9 +41,9 @@ stations={
 'secretagentsoma': 'secretagent',
 'dronezone': 'dronezone',
 'indiepoprocks': 'indiepop',
-'cliqhop': ' cliqhop',
+'cliqhop': 'cliqhop',
 'beatblender': 'beatblender',
-'tags_trip':'tags',
+'Tags_Trip':'tags',
 'illstreet': 'illstreet',
 'spacestationsma': 'spacestation',
 'bootliquor': 'bootliquor',
@@ -52,10 +52,10 @@ stations={
 'suburbsofgoa': 'suburbsofgoa',
 'underground80s': 'u80s',
 'sonicuniverse': 'sonicuniverse',
-'poptron': 'poptron',
+'Poptron': 'poptron',
 'justcovers': 'covers',
 'blackrockfm': 'brfm',
-'xmissioncontrol': 'missioncontrol'}
+'xMissionControl': 'missioncontrol'}
 
 stationids = []
 
